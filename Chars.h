@@ -1,0 +1,21 @@
+#pragma once
+
+#ifndef UNICODE
+#define UNICODE
+#endif
+
+enum PIXEL_TYPE {
+    PIXEL_SOLID = 0x2588,
+    PIXEL_THREEQUARTERS = 0x2593,
+    PIXEL_HALF = 0x2592,
+    PIXEL_QUARTER = 0x2591,
+};
+
+enum CHARS {
+    U_NONE = 0x0000,
+    U_SPACE = 0x0020,
+    U_ARROW_LEFT = 0x2190,
+    U_ARROW_UP = 0x2191,
+    U_ARROW_RIGHT = 0x2192,
+    U_ARROW_DOWN = 0x2193
+};
