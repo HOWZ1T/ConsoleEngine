@@ -29,11 +29,24 @@ private:
     void GameThread();
 
 protected:
+    struct KeyState {
+        bool pressed;
+        bool released;
+        bool held;
+    } keys[256], mouse[5];
+
+    short keyOldState[256] = { 0 };
+    short keyNewState[256] = { 0 };
+    bool mouseOldState[5] = { 0 };
+    bool mouseNewState[5] = { 0 };
+    bool consoleInFocus = true;
+
     HANDLE hConsole, hConsoleIn;
     CHAR_INFO* scrBuffer;
     SMALL_RECT rectWindow;
+    CONSOLE_CURSOR_INFO cursorInfo;
 
-    int scrWidth, scrHeight, fontWidth, fontHeight;
+    int scrWidth, scrHeight, fontWidth, fontHeight, mousePosX, mousePosY;
     const wchar_t* title;
 
     static std::mutex mux;
@@ -49,6 +62,13 @@ public:
 
     void CreateConsole(int width, int height, int fontWidth = 12, int fontHeight = 12, wchar_t title[] = L"Console");
     void Start();
+
+    KeyState GetKey(int keyID);
+    KeyState GetMouse(int mouseBtnID);
+
+    int MouseX();
+    int MouseY();
+    bool IsFocused();
 
     int ScreenWidth();
     int ScreenHeight();
@@ -66,6 +86,7 @@ public:
     std::vector<POINT> MidPointOval(int rx, int ry, int xc, int yc);
 
     // -- DRAWING ROUTINES --
+    bool Clear(WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS);
     bool Draw(int x, int y, WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS);
     bool Rect(struct Rect rect, bool fill = false, WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS,
             WORD fillChr = PIXEL_SOLID, WORD fillAttributes = DEFAULT_ATTRIBS);
@@ -73,4 +94,6 @@ public:
     bool Line(int x, int y, int x1, int y1, WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS);
     bool Oval(int rx, int ry, int x, int y, WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS);
     bool Circle(int r, int x, int y, WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS);
+
+    bool DrawTextW(int x, int y, wchar_t text[], WORD attributes = DEFAULT_ATTRIBS);
 };

@@ -3,6 +3,8 @@
 #include <string>
 
 class TestConsole : public Console {
+    int lastReleased = -1;
+
     bool OnCreate() override {
         return true;
     }
@@ -12,6 +14,8 @@ class TestConsole : public Console {
     }
 
     bool OnDraw() override {
+        Clear(U_NONE, BG_BLACK);
+
         for(int x = 0; x < scrWidth; x++) {
             Draw(x, 0, std::to_wstring(x%10).at(0), FG_RED | BG_BLACK);
         }
@@ -20,8 +24,23 @@ class TestConsole : public Console {
             Draw(0, y, std::to_wstring(y%10).at(0), FG_RED | BG_BLACK);
         }
 
-        Line(1, 2, 9, 4, U_ARROW_RIGHT);
-        Oval(3, 5, 10, 10);
+        wchar_t buf[256];
+        swprintf(buf, 256, L"Mouse: (%d, %d)\0", mousePosX, mousePosY);
+        DrawTextW(2, 2, buf);
+
+        swprintf(buf, 256, L"InFocus: %s\0", consoleInFocus ? L"true" : L"false");
+        DrawTextW(2, 3, buf);
+
+        // get last key released
+        for (int i = 0; i < 256; i++) {
+            if (keys[i].released){
+                lastReleased = i;
+            }
+        }
+
+        swprintf(buf, 256, L"KeyReleased: %d\0", lastReleased);
+        DrawTextW(2, 4, buf);
+
         return true;
     }
 };

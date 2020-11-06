@@ -27,6 +27,12 @@ void Console::CreateConsole(int width, int height, int fontWidth, int fontHeight
         WError((wchar_t) L"SetConsoleTitle");
     }
 
+    std::memset(keyNewState, 0, 256 * sizeof(short));
+    std::memset(keyOldState, 0, 256 * sizeof(short));
+    std::memset(keys, 0, 256 * sizeof(KeyState));
+    mousePosX = 0;
+    mousePosY = 0;
+
     // change console visual size to a minimum so ScreenBuffer can shrink below visual size
     rectWindow = {0, 0, 1, 1};
     if(!SetConsoleWindowInfo(hConsole, true, &rectWindow)) {
@@ -87,8 +93,19 @@ void Console::CreateConsole(int width, int height, int fontWidth, int fontHeight
     scrBuffer = new CHAR_INFO[scrWidth * scrHeight];
     memset(scrBuffer, 0, sizeof(CHAR_INFO) * scrWidth * scrHeight);
 
+    // set cursor info
+    // dwSize specifies percentage of cell filled by the cursor (0 - 100)
+    cursorInfo = {25, false};
+    if (!SetConsoleCursorInfo(hConsole, &cursorInfo)) {
+        WError((wchar_t) L"SetConsoleCursorInfo");
+    }
+
+    if (!SetConsoleCursorPosition(hConsole, { (short) mousePosX, (short) mousePosY })) {
+        WError((wchar_t) L"SetConsoleCursorPosition");
+    }
+
     // set close handler
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CloseHandler, TRUE);
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CloseHandler, true);
 
     // call user create function
     if(!OnCreate()) {
@@ -147,7 +164,7 @@ void Console::Error(LPTSTR msg) {
 }
 
 BOOL Console::CloseHandler(DWORD evt) {
-    if (evt == CTRL_CLOSE_EVENT || evt == CTRL_BREAK_EVENT || evt == CTRL_SHUTDOWN_EVENT || evt == CTRL_LOGOFF_EVENT)
+    if (evt == CTRL_CLOSE_EVENT || evt == CTRL_BREAK_EVENT || evt == CTRL_SHUTDOWN_EVENT || evt == CTRL_LOGOFF_EVENT || evt == CTRL_C_EVENT)
     {
         atomActive = false;
 
@@ -180,6 +197,80 @@ void Console::GameThread() {
 
             float elapsedTime = elapsedTimeDuration.count();
 
+            // handle keyboard input
+            for (int i = 0; i < 256; i++) {
+                keyNewState[i] = GetAsyncKeyState(i);
+                keys[i].pressed = false;
+                keys[i].released = false;
+
+                if (keyNewState[i] != keyOldState[i]) {
+                    if (keyNewState[i] & 0x8000) {
+                        keys[i].pressed = !keys[i].held;
+                        keys[i].held = true;
+                    } else {
+                        keys[i].released = true;
+                        keys[i].held = false;
+                    }
+                }
+
+                keyOldState[i] = keyNewState[i];
+            }
+
+            // handle mouse input
+            INPUT_RECORD inBuf[32];
+            DWORD events = 0;
+            GetNumberOfConsoleInputEvents(hConsoleIn, &events);
+            if (events > 0) {
+                ReadConsoleInput(hConsoleIn, inBuf, events, &events);
+            }
+
+            // handle events - only supports mouse clicks and movement
+            for (DWORD i = 0; i < events; i++) {
+                switch (inBuf[i].EventType) {
+                    case FOCUS_EVENT:
+                        consoleInFocus = inBuf[i].Event.FocusEvent.bSetFocus;
+                        break;
+
+                    case MOUSE_EVENT:
+                        switch (inBuf[i].Event.MouseEvent.dwEventFlags) {
+                            case MOUSE_MOVED:
+                                mousePosX = inBuf[i].Event.MouseEvent.dwMousePosition.X;
+                                mousePosY = inBuf[i].Event.MouseEvent.dwMousePosition.Y;
+                                break;
+
+                            case 0:
+                                for (int m = 0; m < 5; m++) {
+                                    mouseNewState[m] = (inBuf[i].Event.MouseEvent.dwButtonState & (1 << m)) > 0;
+                                }
+                                break;
+
+                            default:
+                                break;
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+
+            for (int m = 0; m < 5; m++) {
+                mouse[m].pressed = false;
+                mouse[m].released = false;
+
+                if (mouseNewState[m] != mouseOldState[m]) {
+                    if (mouseNewState[m]) {
+                        mouse[m].pressed = true;
+                        mouse[m].held = true;
+                    } else {
+                        mouse[m].released = true;
+                        mouse[m].held = false;
+                    }
+                }
+
+                mouseOldState[m] = mouseNewState[m];
+            }
+
             // call user update function
             atomActive = OnUpdate(elapsedTime);
 
@@ -203,6 +294,26 @@ void Console::GameThread() {
             atomActive = true;
         }
     }
+}
+
+Console::KeyState Console::GetKey(int keyID) {
+    return keys[keyID];
+}
+
+Console::KeyState Console::GetMouse(int mouseBtnID) {
+    return mouse[mouseBtnID];
+}
+
+int Console::MouseX() {
+    return mousePosX;
+}
+
+int Console::MouseY() {
+    return mousePosY;
+}
+
+bool Console::IsFocused() {
+    return consoleInFocus;
 }
 
 int Console::ScreenWidth() {
@@ -240,23 +351,22 @@ std::vector<POINT> Console::MidPointOval(int rx, int ry, int xc, int yc) {
     float dx, dy, d1, d2;
     int x = 0, y = ry;
 
-    // Initial decision parameter of region 1
+    // initial decision parameter of region 1
     d1 = (ry * ry) - (rx * rx * ry) +
          (0.25 * rx * rx);
     dx = 2 * ry * ry * x;
     dy = 2 * rx * rx * y;
 
-    // For region 1
+    // for region 1
     while (dx < dy)
     {
-
-        // Print points based on 4-way symmetry
+        // print points based on 4-way symmetry
         points.push_back({(int)(x+xc), (int)(y+yc)});
         points.push_back({(int)(-x+xc), (int)(y+yc)});
         points.push_back({(int)(x+xc), (int)(-y+yc)});
         points.push_back({(int)(-x+xc), (int)(-y+yc)});
 
-        // Checking and updating value of
+        // checking and updating value of
         // decision parameter based on algorithm
         if (d1 < 0)
         {
@@ -274,22 +384,21 @@ std::vector<POINT> Console::MidPointOval(int rx, int ry, int xc, int yc) {
         }
     }
 
-    // Decision parameter of region 2
+    // decision parameter of region 2
     d2 = ((ry * ry) * ((x + 0.5) * (x + 0.5))) +
          ((rx * rx) * ((y - 1) * (y - 1))) -
          (rx * rx * ry * ry);
 
-    // Plotting points of region 2
+    // plotting points of region 2
     while (y >= 0)
     {
-
-        // Print points based on 4-way symmetry
+        // print points based on 4-way symmetry
         points.push_back({(int)(x+xc), (int)(y+yc)});
         points.push_back({(int)(-x+xc), (int)(y+yc)});
         points.push_back({(int)(x+xc), (int)(-y+yc)});
         points.push_back({(int)(-x+xc), (int)(-y+yc)});
 
-        // Checking and updating parameter
+        // checking and updating parameter
         // value based on algorithm
         if (d2 > 0)
         {
@@ -318,9 +427,7 @@ bool Console::Draw(int x, int y, WCHAR chr, WORD attributes) {
     return true;
 }
 
-bool
-
-Console::Rect(struct Rect rect, bool fill, WCHAR chr, WORD attributes, WORD fillChr, WORD fillAttributes) {
+bool Console::Rect(struct Rect rect, bool fill, WCHAR chr, WORD attributes, WORD fillChr, WORD fillAttributes) {
     if (!rect.inBounds(rectWindow)) {
         return false;
     }
@@ -388,6 +495,27 @@ bool Console::Circle(int r, int x, int y, WCHAR chr, WORD attributes) {
 
     for(POINT p : MidPointOval(r, r, x, y)) {
         Draw(p.x, p.y, chr, attributes);
+    }
+
+    return true;
+}
+
+bool Console::DrawTextW(int x, int y, wchar_t text[], WORD attributes) {
+    int len = wcslen(text);
+    if (x + len < 0 || x + len >= scrWidth) return false;
+
+    for(int i = 0; i < len; i++) {
+        wchar_t c = text[i];
+        Draw(x + i, y, c, attributes);
+    }
+
+    return true;
+}
+
+bool Console::Clear(WCHAR chr, WORD attributes) {
+    for(int i = 0; i < scrWidth * scrHeight; i++) {
+        scrBuffer[i].Char.UnicodeChar = chr;
+        scrBuffer[i].Attributes = attributes;
     }
 
     return true;
