@@ -20,6 +20,7 @@
 #include "Colors.h"
 #include "Chars.h"
 #include "Rect.h"
+#include "Sprite.h"
 
 static WCHAR DEFAULT_CHAR = PIXEL_SOLID;
 static WORD DEFAULT_ATTRIBS = FG_WHITE | BG_BLACK;
@@ -96,4 +97,7 @@ public:
     bool Circle(int r, int x, int y, WCHAR chr = DEFAULT_CHAR, WORD attributes = DEFAULT_ATTRIBS);
 
     bool DrawTextW(int x, int y, wchar_t text[], WORD attributes = DEFAULT_ATTRIBS);
+
+    bool DrawSprite(Sprite *sprite, int x, int y, int w, int h);
+    bool DrawSprite(Sprite *sprite, int x, int y);
 };

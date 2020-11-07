@@ -1,11 +1,11 @@
 #include "ConsoleEngine.h"
-#include "Rect.h"
-#include <string>
 
 class TestConsole : public Console {
     int lastReleased = -1;
+    Sprite* sprite = new Sprite(0, 0, nullptr);
 
     bool OnCreate() override {
+        Sprite::FromFile(sprite, L"./sprites/brick.con");
         return true;
     }
 
@@ -41,6 +41,16 @@ class TestConsole : public Console {
         swprintf(buf, 256, L"KeyReleased: %d\0", lastReleased);
         DrawTextW(2, 4, buf);
 
+        DrawSprite(sprite, 10, 10);
+        DrawTextW(2, 6, (wchar_t*) std::to_wstring(sprite->Width()).c_str());
+        DrawTextW(2, 7, (wchar_t*) std::to_wstring(sprite->Height()).c_str());
+        Draw(mousePosX, mousePosY, PIXEL_SOLID, FG_CYAN);
+
+        return true;
+    }
+
+    bool OnDestory() override {
+        delete sprite;
         return true;
     }
 };

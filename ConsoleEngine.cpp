@@ -520,3 +520,22 @@ bool Console::Clear(WCHAR chr, WORD attributes) {
 
     return true;
 }
+
+bool Console::DrawSprite(Sprite* sprite, int x, int y, int w, int h) {
+    if (x < 0 || x >= scrWidth || y < 0 || y >= scrHeight || x + w < 0 || x + w >= scrWidth || y + h < 0 || y + h >= scrHeight) {
+        return false;
+    }
+
+    for (int ix = 0; ix < w; ix++) {
+        for (int iy = 0; iy < h; iy++) {
+            short col = sprite->GetPixel(ix, iy);
+            Draw(ix + x, iy + y, PIXEL_SOLID, col);
+        }
+    }
+
+    return true;
+}
+
+bool Console::DrawSprite(Sprite* sprite, int x, int y) {
+    return DrawSprite(sprite, x, y, sprite->Width(), sprite->Height());
+}
