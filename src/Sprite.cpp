@@ -1,4 +1,4 @@
-#include "Sprite.h"
+#include "include/Sprite.h"
 
 Sprite::Sprite(int width, int height, short buffer[]) {
     this->width = width;
@@ -50,6 +50,12 @@ bool Sprite::FromFile(Sprite* sprite, wchar_t fp[]) {
     sprite->buffer = buff;
 
     return true;
+}
+
+Sprite::Sprite() {
+    width = 0;
+    height = 0;
+    buffer = nullptr;
 }
 
 Sprite::~Sprite() {

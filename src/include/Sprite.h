@@ -18,6 +18,7 @@ private:
 
 public:
     Sprite(int width, int height, short buffer[]);
+    Sprite();
     ~Sprite();
 
     int Width();

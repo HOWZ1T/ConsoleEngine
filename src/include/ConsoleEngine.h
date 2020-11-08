@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONSOLE_ENGINE_H
+#define CONSOLE_ENGINE_H
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -8,7 +9,7 @@
 #define UNICODE
 #endif
 
-#include <windows.h>
+#include <Windows.h>
 #include <dshow.h>
 #include <chrono>
 #include <thread>
@@ -80,7 +81,7 @@ public:
     virtual bool OnDraw() = 0;
 
     // -- OPTIONAL: for resource clean up --
-    virtual bool OnDestory() {return true;}
+    virtual bool OnDestroy() {return true;}
 
     // -- UTILITIES --
     std::vector<POINT> BrensenhamLine(int x1, int y1, int x2, int y2);
@@ -101,3 +102,5 @@ public:
     bool DrawSprite(Sprite *sprite, int x, int y, int w, int h);
     bool DrawSprite(Sprite *sprite, int x, int y);
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONSOLE_ENGINE_CHARS_H
+#define CONSOLE_ENGINE_CHARS_H
 
 #ifndef UNICODE
 #define UNICODE
@@ -19,3 +20,5 @@ enum CHARS {
     U_ARROW_RIGHT = 0x2192,
     U_ARROW_DOWN = 0x2193
 };
+
+#endif

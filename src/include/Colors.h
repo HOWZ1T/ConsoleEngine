@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONSOLE_ENGINE_COLORS_H
+#define CONSOLE_ENGINE_COLORS_H
 
 #ifndef UNICODE
 #define UNICODE
@@ -39,3 +40,5 @@ enum COLOR
     BG_YELLOW		= 0x00E0,
     BG_WHITE		= 0x00F0,
 };
+
+#endif

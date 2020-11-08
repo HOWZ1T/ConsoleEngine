@@ -1,4 +1,4 @@
-#include "ConsoleEngine.h"
+#include "include/ConsoleEngine.h"
 
 std::atomic<bool> Console::atomActive(false);
 std::condition_variable Console::gameFinished;
@@ -106,11 +106,6 @@ void Console::CreateConsole(int width, int height, int fontWidth, int fontHeight
 
     // set close handler
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)CloseHandler, true);
-
-    // call user create function
-    if(!OnCreate()) {
-        Error( L"OnCreate");
-    }
 }
 
 Console::~Console() {
@@ -164,7 +159,7 @@ void Console::Error(LPTSTR msg) {
 }
 
 BOOL Console::CloseHandler(DWORD evt) {
-    if (evt == CTRL_CLOSE_EVENT || evt == CTRL_BREAK_EVENT || evt == CTRL_SHUTDOWN_EVENT || evt == CTRL_LOGOFF_EVENT || evt == CTRL_C_EVENT)
+    if (evt == CTRL_CLOSE_EVENT)
     {
         atomActive = false;
 
@@ -185,6 +180,11 @@ void Console::Start() {
 }
 
 void Console::GameThread() {
+    // call user create function
+    if(!OnCreate()) {
+        atomActive = false;
+    }
+
     auto tp1 = std::chrono::system_clock::now();
     auto tp2 = std::chrono::system_clock::now();
 
@@ -275,9 +275,7 @@ void Console::GameThread() {
             atomActive = OnUpdate(elapsedTime);
 
             // call user draw function
-            if(!OnDraw()) {
-                WError((wchar_t) L"OnDraw");
-            }
+            atomActive = OnDraw();
 
             // update title and present screen buffer
             wchar_t s[256];
@@ -286,7 +284,7 @@ void Console::GameThread() {
             WriteConsoleOutput(hConsole, scrBuffer, { (short)scrWidth, (short)scrHeight }, { 0,0 }, &rectWindow);
         }
 
-        if (OnDestory()) {
+        if (OnDestroy()) {
             delete[] scrBuffer;
             gameFinished.notify_one();
         } else {
@@ -528,7 +526,7 @@ bool Console::DrawSprite(Sprite* sprite, int x, int y, int w, int h) {
 
     for (int ix = 0; ix < w; ix++) {
         for (int iy = 0; iy < h; iy++) {
-            short col = sprite->GetPixel(ix, iy);
+            short col = sprite->Sample((float)ix/(float)w, (float)iy/(float)h);
             Draw(ix + x, iy + y, PIXEL_SOLID, col);
         }
     }

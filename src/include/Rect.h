@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONSOLE_ENGINE_RECT_H
+#define CONSOLE_ENGINE_RECT_H
 
 struct Rect {
 public:
@@ -34,3 +35,5 @@ public:
         return Rect{sr.Left, sr.Top, (SHORT) (sr.Right - sr.Left), (SHORT) (sr.Top - sr.Bottom)};
     }
 };
+
+#endif

@@ -1,8 +1,8 @@
-#include "ConsoleEngine.h"
+#include "include/ConsoleEngine.h"
 
 class TestConsole : public Console {
     int lastReleased = -1;
-    Sprite* sprite = new Sprite(0, 0, nullptr);
+    Sprite* sprite = new Sprite();
 
     bool OnCreate() override {
         Sprite::FromFile(sprite, L"./sprites/brick.con");
@@ -41,22 +41,24 @@ class TestConsole : public Console {
         swprintf(buf, 256, L"KeyReleased: %d\0", lastReleased);
         DrawTextW(2, 4, buf);
 
-        DrawSprite(sprite, 10, 10);
         DrawTextW(2, 6, (wchar_t*) std::to_wstring(sprite->Width()).c_str());
         DrawTextW(2, 7, (wchar_t*) std::to_wstring(sprite->Height()).c_str());
+
+        DrawSprite(sprite, 10, 10);
+
         Draw(mousePosX, mousePosY, PIXEL_SOLID, FG_CYAN);
 
         return true;
     }
 
-    bool OnDestory() override {
+    bool OnDestroy() override {
         delete sprite;
         return true;
     }
 };
 
 int main() {
-    TestConsole con = TestConsole();
+    TestConsole con;
     con.CreateConsole(80, 45, 16, 16);
     con.Start();
     return 0;
